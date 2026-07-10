@@ -12,19 +12,30 @@ function startGame() {
   newLine(
     'You wake up and notice you are lying on the ground and not in bed. You look around your room and notice it\'s very out of order. Some of the large furniture has been knocked over. You realize that you must have been sleepwalking. <br> You decide to investigate further. '
   );
-  bedroom();
+  goSomewhere("bedroom");
 }
 
 function gameInput(number) {
   let input = number;
+  if (nextPlaces[input - 1] === undefined) {
+    newLine("That's not one of the options.");
+    return;
+  }
   lastGameInput = input;
   goSomewhere(nextPlaces[input - 1]);
 }
 
 function goSomewhere(place) {
+  if (typeof places[place] !== "function") {
+    newLine("You can't go there.");
+    return;
+  }
   lastPlace = activePlace;
   activePlace = place;
-  window[place]();
+  let startIdx = linesElement.children.length;
+  places[place]();
+  lastPlaceOutputStart = startIdx;
+  lastPlaceOutputEnd = linesElement.children.length;
 }
 
 const rooms = {
@@ -86,7 +97,7 @@ function bedroom() {
 }
 function kitchen() {
   if (itemQuantity("plate") > 0 && itemQuantity("plate") >= howManyItemsDoesPersonNeed("you", "plate") && !rooms.kitchen.clean) {
-    removeItemFromInventory("plate", 2);
+    removeItemFromInventory("plate", howManyItemsDoesPersonNeed("you", "plate"));
     rooms.kitchen.clean = true;
     completeQuest("you", "plate");
     kitchen();
@@ -99,7 +110,7 @@ function kitchen() {
       ['Press "1" to check out the bedroom.', 'Press "2" to check out the bathroom.', 'Press "3" to leave the house']
     );
     nextPlaces = ["bedroom", "bathroom", "outside"];
-    addQuest("you", "Get new plates to replace the ones you broke", "plates", 2);
+    addQuest("you", "Get new plates to replace the ones you broke", "plate", 2);
   }
   else {
     newLine('The kitchen is clean, the dishes stacked, and everything is in its place. Where would you like to go next? ', "",
@@ -149,10 +160,7 @@ function park() {
   nextPlaces = ["outside"];
 }
 function oldmanHouse() {
-  if (itemWasNeeded("lamp") && !rooms.oldman.happy) {
-    rooms.oldman.happy = true;
-    return;
-  }
+  if (itemWasNeeded("lamp")) rooms.oldman.happy = true;
   newLine("You go to talk to your neighbor, who often likes to sit on the porch, and ask him what happened. You know he is retired and does not work, but he does not appear to be home. You knock on the door several times and eventually he comes out. After he sees you, he yells:");
   if (!rooms.oldman.visited && !rooms.oldman.happy) {
     rooms.oldman.visited = true;
@@ -266,6 +274,7 @@ function crossBridge() {
 function femaleNeighbor() {
   if (itemWasNeeded("flower")) rooms.femaleneighbor.happy = true;
   if (!rooms.femaleneighbor.visited && !rooms.femaleneighbor.happy) {
+    rooms.femaleneighbor.visited = true;
     let needsSomething = newDialog(
       "assets/img/femaleneighbor.png",
       "femaleneighbor",
@@ -278,6 +287,7 @@ function femaleNeighbor() {
       ['Press "1" to say "I have been sleep walking recently and was told I came over here, the person who tore out your plants might have been me..."', 'Press "2" to say "I am sorry to hear that, hope you can find who did it."']
     );
     if (needsSomething) newLine('Use "g &#60;item>" to give items');
+    nextPlaces = ["angryFemaleNeighbor", "leaveFemaleNeighbor"];
   }
   else if (rooms.femaleneighbor.visited && !rooms.femaleneighbor.happy) {
     let needsSomething = newDialog(
@@ -286,6 +296,7 @@ function femaleNeighbor() {
       "My beautiful flowers! All gone! If only someone would pull me out of this utter despair."
     );
     if (needsSomething) newLine('Use "g &#60;item>" to give items');
+    nextPlaces = ["angryFemaleNeighbor", "leaveFemaleNeighbor"];
   }
   else {
     newDialog(
@@ -293,7 +304,7 @@ function femaleNeighbor() {
       "femaleneighbor",
       "Oh, you brought me some flowers! Thank you so much! I'll go plant them immediately. And, by the way, I've got these lovely plates I don't use anymore, you can have them if they tickle you fancy."
     );
-    if (rooms.femaleneighbor.collectedReward) {
+    if (!rooms.femaleneighbor.collectedReward) {
       rooms.femaleneighbor.collectedReward = true;
       addItemToInventory("plate");
       addItemToInventory("plate");
@@ -301,7 +312,6 @@ function femaleNeighbor() {
     newLine("Press \"1\" to go back outside");
     nextPlaces = ["outside"];
   }
-  nextPlaces = ["angryFemaleNeighbor", "leaveFemaleNeighbor"];
 }
 function angryFemaleNeighbor() {
   newDialog("assets/img/femaleneighbor.png", "femaleneighbor", "WHAT THE HELL! You are going to stay here for the rest of the day, and replant for me, or I will be calling the cops!");
@@ -354,6 +364,27 @@ function endGame() {
   clearTerminal();
   location.reload();
 }
+
+const places = {
+  bedroom,
+  kitchen,
+  bathroom,
+  outside,
+  park,
+  oldmanHouse,
+  questionOldman,
+  angryOldman,
+  leaveOldman,
+  crossBranch,
+  crossBridge,
+  femaleNeighbor,
+  angryFemaleNeighbor,
+  leaveFemaleNeighbor,
+  store,
+  buyLamp,
+  buyFlower,
+  endGame
+};
 
 function howtoplay() {
   if (document.getElementsByClassName("play")[0]) {

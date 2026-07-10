@@ -1,46 +1,39 @@
 // Terminal code
+let lastPlaceOutputStart = 0;
+let lastPlaceOutputEnd = 0;
 let commandHistory = [];
 let commandHistoryIndex = 0;
 let inputElement = document.querySelector(".terminal-input");
+const linesElement = document.querySelector(".lines");
+const shellElement = document.getElementById("shell");
 inputElement.value = "";
 inputElement.focus();
 
-
-
-
-
-
-
-document.querySelector(".terminal-input").addEventListener("keydown", (e) => {
-  if (e.keyCode == 38 || e.keyCode == 40) {
-    commandHistory.push("");
-    if (commandHistory.length == 0) return;
-    if (e.keyCode == 38) {
-      if (commandHistory[commandHistoryIndex - 1]) commandHistoryIndex--;
+inputElement.addEventListener("keydown", (e) => {
+  if (e.key == "ArrowUp" || e.key == "ArrowDown") {
+    if (e.key == "ArrowUp") {
+      if (commandHistoryIndex > 0) commandHistoryIndex--;
     } else {
-      if (commandHistoryIndex + 1 < commandHistory.length)
-        commandHistoryIndex++;
-      else {
-        inputElement.value = "";
-        commandHistory.pop();
-        return;
-      }
+      if (commandHistoryIndex < commandHistory.length) commandHistoryIndex++;
     }
-    inputElement.value = commandHistory[commandHistoryIndex];
-    commandHistory.pop();
+    inputElement.value = commandHistory[commandHistoryIndex] || "";
   }
-  if (e.keyCode != 13) return;
+  if (e.key != "Enter") return;
 
   let input = inputElement.value;
   inputElement.value = "";
 
-  commandHistory.push(input);
+  if (input !== "") commandHistory.push(input);
   commandHistoryIndex = commandHistory.length;
 
-  let inputLine = document.createElement("div");
-
-  inputLine.innerHTML = `<span class="terminal-text">you@sleepwalker.quest:~$&nbsp;<span class="terminal-input" style="inline-block">${input}</span>`;
-  newLine(inputLine.innerHTML);
+  let inputLine = document.createElement("span");
+  inputLine.classList.add("terminal-text");
+  inputLine.append("you@sleepwalker.quest:~$ ");
+  let echoedInput = document.createElement("span");
+  echoedInput.classList.add("terminal-input");
+  echoedInput.textContent = input;
+  inputLine.append(echoedInput);
+  newLine(inputLine.outerHTML);
 
   let keywords = input.split(" ");
 
@@ -81,7 +74,7 @@ function runCommand(keywords, input) {
       newLine(new Date());
       break;
     case "echo":
-      newLine(keywords.slice(1).join(" "));
+      newLine(escapeHTML(keywords.slice(1).join(" ")));
       break;
     case "fetch":
     case "fastfetch":
@@ -109,14 +102,22 @@ function runCommand(keywords, input) {
       break;
     case "nevergonna":
       window.location.href = "https://www.youtube.com/watch?v=dQw4w9WgXcQ";
+      break;
     case "sudo":
       if (keywords[1] == "rm" && keywords[2] == "-rf" && keywords[3] == "/") {
         document.body.remove();
       }
+      break;
     default:
-      newLine("could not find command <b>" + input + "</b>");
+      newLine("could not find command <b>" + escapeHTML(input) + "</b>");
       newLine("try the command <b>help</b> to see possible commands");
   }
+}
+
+function escapeHTML(text) {
+  let escaper = document.createElement("span");
+  escaper.textContent = text;
+  return escaper.innerHTML;
 }
 
 function runGameCommand(keywords, input) {
@@ -130,8 +131,9 @@ function runGameCommand(keywords, input) {
       newLine("g &#60;item> &#60;amount>: gives item to person");
       newLine("trash <item> <amount>: removes item from inventory");
       newLine("exit: exits the game");
+      break;
     case "what?":
-      window[activePlace]();
+      repeatLastOutput();
       break;
     case "exit":
       endGame();
@@ -168,7 +170,7 @@ function runGameCommand(keywords, input) {
     case "give":
       if (keywords[1] === undefined) {
         newLine("Give what?");
-        window[activePlace]();
+        repeatLastOutput();
         return;
       }
       let amount = keywords[2] || 1;
@@ -197,9 +199,9 @@ function newLine(content, className, options) {
   line.classList.add("line");
   if (className) line.classList.add(className);
   line.innerHTML = content;
-  document.querySelector(".lines").append(line);
-  let shell = document.getElementById("shell");
-  shell.scrollTop = shell.scrollHeight;
+  linesElement.append(line);
+  while (linesElement.children.length > 500) linesElement.firstChild.remove();
+  shellElement.scrollTop = shellElement.scrollHeight;
 
   if (options) {
     newLine("<br>");
@@ -210,6 +212,19 @@ function newLine(content, className, options) {
   }
 
   return line;
+}
+
+function repeatLastOutput() {
+  let lines = Array.from(linesElement.children).slice(lastPlaceOutputStart, lastPlaceOutputEnd);
+  if (lines.length === 0) {
+    newLine("Nothing to repeat.");
+    return;
+  }
+  for (let line of lines) {
+    linesElement.append(line.cloneNode(true));
+  }
+  while (linesElement.children.length > 500) linesElement.firstChild.remove();
+  shellElement.scrollTop = shellElement.scrollHeight;
 }
 
 function newDialog(image, speaker, text, className) {
@@ -236,7 +251,7 @@ function newDialog(image, speaker, text, className) {
   textContainer.append(speakerName);
   textContainer.append(dialogText);
 
-  document.querySelector(".lines").append(newLine);
+  linesElement.append(newLine);
 
   let itemsNeededByPerson = itemsNeeded(speaker);
   if (itemsNeededByPerson) {
@@ -248,7 +263,7 @@ function newDialog(image, speaker, text, className) {
 }
 
 function clearTerminal() {
-  document.querySelector(".lines").innerHTML = "";
+  linesElement.innerHTML = "";
 }
 
 function printNeofetch() {

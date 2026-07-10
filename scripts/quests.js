@@ -16,7 +16,7 @@ function questDoesNotExist(text) {
 
 function giveItems(person, item, amount) {
     if (!personNeedsItem(person, item)) {
-        newLine(`${people["person"].name} doesn't want your useless ${item}!`);
+        newLine(`${people[person].name} doesn't want your useless ${item}!`);
         return;
     }
 
@@ -29,8 +29,7 @@ function giveItems(person, item, amount) {
         reduceItemsNeeded(person, item, itemsNeeded);
         completeQuest(person, item);
         newLine(`Quest complete!`);
-        goToPlace("3")
-        goSomewhere(lastPlace)
+        goSomewhere(activePlace)
 
         return;
     }
@@ -38,11 +37,8 @@ function giveItems(person, item, amount) {
         newLine(`You don't have enough ${item}s! Gave ${itemsOwned}, ${people[person].name} still needs ${itemsNeeded - itemsOwned}`);
         reduceItemsNeeded(person, item, itemsOwned);
         removeItemFromInventory(item, itemsOwned);
-        
+
         return;
-    }
-    else {
-        newLine(`You don't have any ${item}, go and get some`);
     }
 
     function reduceItemsNeeded(person, item, amount) {
@@ -56,7 +52,9 @@ function giveItems(person, item, amount) {
 }
 
 function completeQuest(person, item) {
-    let quest = quests.splice(quests.indexOf([person, item]), 1)[0];
+    let index = quests.findIndex((quest) => quest[0] === person && quest[2] === item);
+    if (index === -1) return;
+    let quest = quests.splice(index, 1)[0];
     completedQuests.push(quest);
 }
 
@@ -90,7 +88,7 @@ function howManyItemsDoesPersonNeed(person, item) {
 
 function showQuestsDialog() {
     let questsBox = document.createElement("div");
-    newLine(`Quests: ${(inventory.length === 0) ? " you have none" : ""}`);
+    newLine(`Quests: ${(quests.length === 0) ? " you have none" : ""}`);
 
     questsBox.style.display = "grid";
     questsBox.style.gridTemplateColumns = "repeat(2, 1fr)";
@@ -108,7 +106,8 @@ function showQuestsDialog() {
         speakerImage.style.height = "150px";
         speakerName.innerHTML = people[speaker].name;
         dialogText.innerHTML = quests[i][1];
-        request = `${quests[i][3]} ${quests[i][2]}(s)`;
+        let request = document.createElement("p");
+        request.innerText = `${quests[i][3]} ${quests[i][2]}(s)`;
 
         container.classList.add("dialog");
         container.style.display = "grid";
@@ -123,7 +122,7 @@ function showQuestsDialog() {
         questsBox.append(container);
     }
 
-    document.querySelector(".lines").append(questsBox);
+    linesElement.append(questsBox);
 
     return newLine;
 }

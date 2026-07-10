@@ -50,7 +50,7 @@ h1 {
 
 /* Terminal */
 .shell {
-  box-sizing: margin-box;
+  box-sizing: border-box;
   padding: 20px;
   height: 80vh;
   width: 100vw;

@@ -15,6 +15,7 @@ function isInInventory(item) {
             return true;
         }
     }
+    return false;
 }
 
 function itemQuantity(item) {
@@ -56,7 +57,7 @@ function removeItemFromInventory(item, amount) {
     for (let i = 0; i < inventory.length; i++) {
         if (inventory[i][0] === item) {
             inventory[i][1] -= amount;
-            if (inventory[i][1] === 0) {
+            if (inventory[i][1] <= 0) {
                 inventory.splice(i, 1);
             }
             newLine(`Removed ${amount} ${item}(s)`);
@@ -94,6 +95,6 @@ function showInventoryDialog() {
 
     inventoryBox.classList.add('inventoryBox');
 
-    document.querySelector(".lines").append(inventoryBox);
+    linesElement.append(inventoryBox);
     return inventoryBox;
 }
